@@ -86,5 +86,8 @@ dependencies {
 
     implementation(libs.androidx.material.icons.extended.android)
 
+    implementation(libs.androidx.room.runtime.v251) // Use the latest version
+    //implementation(libs.androidx.room.compiler.v251 )// For annotation processing
+
 
 }

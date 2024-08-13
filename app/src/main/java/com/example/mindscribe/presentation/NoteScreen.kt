@@ -2,18 +2,7 @@ package com.example.mindscribe.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,12 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,8 +35,7 @@ fun NoteScreen(
     onEvent: (NotesEvent) -> Unit
 ) {
     Scaffold(
-        topBar =
-        {
+        topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -60,13 +44,12 @@ fun NoteScreen(
                     .padding(15.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Image(
-                    painter = painterResource(id = R.drawable.logo), // Load the logo bitmap
-                    contentDescription = "MindScribe App Logo", // Add a content description for accessibility
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "MindScribe App Logo",
                     modifier = Modifier
-                        .size(40.dp) // adjust the size of the logo
-                        .clip(CircleShape) // optional, to make the logo circular
+                        .size(40.dp)
+                        .clip(CircleShape)
                 )
                 Text(
                     text = " MindScribe",
@@ -78,28 +61,24 @@ fun NoteScreen(
                 )
                 IconButton(onClick = { onEvent(NotesEvent.SortNotes) }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.Sort, contentDescription = null,
+                        imageVector = Icons.AutoMirrored.Rounded.Sort,
+                        contentDescription = null,
                         modifier = Modifier.size(40.dp),
                         tint = Color.White
                     )
-
                 }
-
             }
         },
-        floatingActionButton =
-        {
-            FloatingActionButton(containerColor = Color.Red , onClick = {
+        floatingActionButton = {
+            FloatingActionButton(containerColor = Color.Red, onClick = {
                 state.title.value = ""
                 state.disp.value = ""
                 navController.navigate("AddNoteScreen")
-
-            })
-            {
+            }) {
                 Icon(imageVector = Icons.Rounded.Add, contentDescription = null, tint = Color.White)
             }
         },
-        floatingActionButtonPosition = FabPosition.Center // This is important to center the FAB
+        floatingActionButtonPosition = FabPosition.Center
     ) {
         Box(
             modifier = Modifier
@@ -110,7 +89,6 @@ fun NoteScreen(
                     )
                 )
         ) {
-            // Add your background image here
             Image(
                 painter = painterResource(id = R.drawable.notescreenimage),
                 contentDescription = null,
@@ -123,33 +101,36 @@ fun NoteScreen(
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(state.notes.size) {
+                items(state.notes.size) { index ->
                     NoteItem(
                         state = state,
-                        index = it,
+                        index = index,
+                        navController = navController,
                         onEvent = onEvent
                     )
                 }
-
             }
-
         }
     }
 }
 
 @Composable
-fun NoteItem(state: NoteState, index: Int, onEvent: (NotesEvent) -> Unit) {
+fun NoteItem(
+    state: NoteState,
+    index: Int,
+    navController: NavController,
+    onEvent: (NotesEvent) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(Pink80)
             .padding(12.dp)
-
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = state.notes.get(index = index).title,
+                text = state.notes[index].title,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.SansSerif,
@@ -157,22 +138,31 @@ fun NoteItem(state: NoteState, index: Int, onEvent: (NotesEvent) -> Unit) {
             )
             Spacer(modifier = Modifier.height(9.dp))
             Text(
-                text = state.notes.get(index = index).disp,
+                text = state.notes[index].disp,
                 fontSize = 16.sp,
                 fontFamily = FontFamily.Default,
                 color = Color.White
             )
-
         }
-        IconButton(onClick = { onEvent(NotesEvent.DeleteNote(
-            state.notes.get(index = index)
 
-        )) }) {
+        IconButton(onClick = {
+            navController.navigate("EditNoteScreen/${state.notes[index].id}")
+        }) {
+            Icon(
+                imageVector = Icons.Rounded.Edit,
+                contentDescription = "Edit Note",
+                modifier = Modifier.size(35.dp),
+                tint = Color.Cyan
+            )
+        }
+
+        IconButton(onClick = {
+            onEvent(NotesEvent.DeleteNote(state.notes[index]))
+        }) {
             Icon(
                 imageVector = Icons.Rounded.Delete,
                 contentDescription = null,
                 modifier = Modifier.size(35.dp)
-
             )
         }
     }

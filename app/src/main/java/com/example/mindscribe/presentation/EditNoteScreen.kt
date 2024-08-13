@@ -21,13 +21,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindscribe.R
-
 @Composable
-fun AddNoteScreen(
+fun EditNoteScreen(
     state: NoteState,
+    noteId: String, // Assuming noteId is a String; change to Int if needed
     navController: NavController,
     onEvent: (NotesEvent) -> Unit
 ) {
+    val note = state.notes.find { it.id.toString() == noteId }
+    if (note != null) {
+        // Update state with note details if not already populated
+        state.title.value = note.title
+        state.disp.value = note.disp
+    }
+
     Scaffold(
         topBar = {
             Row(
@@ -57,15 +64,18 @@ fun AddNoteScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                onEvent(
-                    NotesEvent.SaveNote(
-                        title = state.title.value,
-                        disp = state.disp.value
+                if (note != null) {
+                    onEvent(
+                        NotesEvent.UpdateNote(
+                            id = noteId,
+                            title = state.title.value,
+                            disp = state.disp.value
+                        )
                     )
-                )
-                navController.popBackStack()
+                    navController.popBackStack()
+                }
             }) {
-                Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                Icon(imageVector = Icons.Rounded.Check, contentDescription = "Save")
             }
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -80,8 +90,8 @@ fun AddNoteScreen(
                 )
         ) {
             Image(
-                painter = painterResource(id = R.drawable.addnotescreenimage),
-                contentDescription = null,
+                painter = painterResource(id = R.drawable.editpage),
+                contentDescription = "Background Image",
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -91,21 +101,19 @@ fun AddNoteScreen(
                     .fillMaxSize()
             ) {
                 Text(
-                    text = "Add Your Content",
+                    text = "Edit Your Content",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(25.dp),
-
-                    fontWeight = FontWeight.ExtraBold,
+                        .padding(16.dp),
+                    fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
-
                     color = Color.DarkGray
                 )
 
                 OutlinedTextField(
                     value = state.title.value,
-                    onValueChange = {
-                        state.title.value = it
+                    onValueChange = { title ->
+                        state.title.value = title
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -121,8 +129,8 @@ fun AddNoteScreen(
 
                 OutlinedTextField(
                     value = state.disp.value,
-                    onValueChange = {
-                        state.disp.value = it
+                    onValueChange = { description ->
+                        state.disp.value = description
                     },
                     modifier = Modifier
                         .fillMaxWidth()

@@ -1,5 +1,6 @@
 package com.example.mindscribe.presentation
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,63 +15,87 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class NoteViewModel(
-    private var dao: NoteDao
-       ) : ViewModel()
-{
-    private var isSortedByDateAdded = MutableStateFlow(true)
+    private val dao: NoteDao
+) : ViewModel() {
 
-    private var notes = isSortedByDateAdded.flatMapLatest {
-        if(it){
+    private val isSortedByDateAdded = MutableStateFlow(true)
+
+    private val notes = isSortedByDateAdded.flatMapLatest {
+        if (it) {
             dao.getOrderedByDateAddedBy()
-        }
-        else{
+        } else {
             dao.getOrderedByTitle()
         }
-
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
-     var _state = MutableStateFlow(NoteState())
-    var state = combine(_state, isSortedByDateAdded, notes){
-        state,isSortedByDateAdded, notes->
 
-         state.copy(
-             notes = notes
-         )
+    private val _state = MutableStateFlow(NoteState())
+    val state = combine(_state, isSortedByDateAdded, notes) { state, _, notes ->
+        state.copy(
+            notes = notes
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NoteState())
 
-   }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),NoteState())
-
-    fun onEvent(event: NotesEvent)
-    {
-        when(event)
-        {
-
-            is NotesEvent.DeleteNote ->
-                {
+    fun onEvent(event: NotesEvent) {
+        when (event) {
+            is NotesEvent.DeleteNote -> {
                 viewModelScope.launch {
-                    dao.deleteNote(event.note)
+                    try {
+                        dao.deleteNote(event.note)
+                    } catch (e: Exception) {
+                        Log.e("NoteViewModel", "Error deleting note: ${e.message}", e)
+                    }
                 }
             }
-            is NotesEvent.SaveNote ->
-             {
-
+            is NotesEvent.SaveNote -> {
                 val note = Note(
-                    title = state.value.title.value,
-                    disp = state.value.disp.value,
+                    title = event.title,
+                    disp = event.disp,
                     dateAdded = System.currentTimeMillis()
                 )
                 viewModelScope.launch {
-                    dao.upsertNote(note = note)
+                    try {
+                        dao.upsertNote(note)
+                    } catch (e: Exception) {
+                        Log.e("NoteViewModel", "Error saving note: ${e.message}", e)
+                    }
+                    _state.update {
+                        it.copy(
+                            title = mutableStateOf(""),
+                            disp = mutableStateOf("")
+                        )
+                    }
                 }
+            }
+            is NotesEvent.UpdateNote -> {
+                viewModelScope.launch {
+                    try {
+                        dao.updateNote(
+                            Note(
+                                id = event.id.toInt(), // Assuming id is a string representation of an integer
+                                title = event.title,
+                                disp = event.disp,
+                                dateAdded = System.currentTimeMillis() // You might want to retrieve the original date instead
+                            )
+                        )
+                    } catch (e: Exception) {
+                        Log.e("NoteViewModel", "Error updating note: ${e.message}", e)
+                    }
+                }
+            }
+            NotesEvent.SortNotes -> {
+                isSortedByDateAdded.value = !isSortedByDateAdded.value
+            }
+            is NotesEvent.EditNote -> {
                 _state.update {
-                   it.copy(
-                        title = mutableStateOf(""),
-                        disp = mutableStateOf("")
+                    it.copy(
+                        title = mutableStateOf(event.note.title),
+                        disp = mutableStateOf(event.note.disp)
                     )
                 }
             }
-            NotesEvent.SortNotes ->
-            {
-                isSortedByDateAdded.value = !isSortedByDateAdded.value
-
+            else -> {
+                Log.e("NoteViewModel", "Unknown event: $event")
+                throw IllegalArgumentException("Unknown event: $event")
             }
         }
     }
